@@ -1,5 +1,4 @@
 
-#include <stdio.h>
 #include "type.h"
 
 static const unsigned char tab_CRCHi[] = {
