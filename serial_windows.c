@@ -105,7 +105,6 @@ DWORD WINAPI WriteThread( void *param )
     while ( 1 ) {
         if (!serial->sending)
             continue;
-        cnt++;
         /* sending  packet.... */
         packet_size = serial->stuffPacket(serial,++cnt);
         DWORD byteWriten;
