@@ -4,17 +4,17 @@ int serial_run(Serial *serial)
 {
     HANDLE rHandle = CreateThread(NULL, 0, ReadThread, serial, 0, NULL);
     if (rHandle == INVALID_HANDLE_VALUE){
-        fprintf(stdout,"create read thread failed!\nquit...\n");
+        fprintf(stdout,"create read thread failed!\nexit...\n");
         exit(0);
     }
     HANDLE wHandle = CreateThread(NULL, 0, WriteThread, serial, 0, NULL);
     if (wHandle == INVALID_HANDLE_VALUE){
-        fprintf(stdout,"create write thread failed!\nquit...\n");
+        fprintf(stdout,"create write thread failed!\nexit...\n");
         exit(0);
     }
     HANDLE kHandle = CreateThread(NULL, 0, KeyThread, serial, 0, NULL);
     if (wHandle == INVALID_HANDLE_VALUE){
-        fprintf(stdout,"create write thread failed!\nquit...\n");
+        fprintf(stdout,"create key  thread failed!\nexit...\n");
         exit(0);
     }
     WaitForSingleObject(rHandle, INFINITE);
@@ -44,8 +44,8 @@ int serial_open(Serial *serial)
         exit(1);
         return 0;
     }
-    //SetCommMask(serial->hSerial, EV_RXCHAR|EV_TXEMPTY);
-    SetupComm(serial->hSerial,1024*16,1024*16); //setup in&out buffer size
+
+    SetupComm(serial->hSerial,1024*64,1024*64); //setup in&out buffer size
     CommTimeOuts.ReadIntervalTimeout = 500;
     CommTimeOuts.ReadTotalTimeoutMultiplier = 10;
     CommTimeOuts.ReadTotalTimeoutConstant = 500;
@@ -53,7 +53,6 @@ int serial_open(Serial *serial)
     CommTimeOuts.WriteTotalTimeoutConstant = 100;
     SetCommTimeouts(serial->hSerial, &CommTimeOuts);
 
-    //dcb.DCBlength = sizeof(DCB);
     GetCommState(serial->hSerial, &dcb);
     dcb.BaudRate = atoi(serial->baudStr);
     dcb.StopBits =ONESTOPBIT;

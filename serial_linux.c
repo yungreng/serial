@@ -1,9 +1,3 @@
-/****************************************************************************
- *
- * This implements a sample program for accessing the serial port.
- *
- *****************************************************************************/
-
 
 #include "type.h"
 
@@ -34,7 +28,6 @@ void setup_terminal(void)
 /***************************************************************************/
 void restore_terminal(void)
 {
-    // Restore stdin back to the way it was when we started
     if ( tcsetattr( fileno( stdin ), TCSANOW, &stdin_tio_org ) < 0 )
     {
         fprintf( stdout, "Unable to restore terminal settings: %s\n", strerror( errno ));
@@ -45,48 +38,45 @@ void restore_terminal(void)
 /***************************************************************************/
 int serial_run(Serial *serial)
 {
-    int rc;
+    int r;
     int sig;
     sigset_t termSig;
     pthread_t readThreadId;
     pthread_t keyThreadId;
     pthread_t writeThreadId;
 
-    // Put stdin & stdout in unbuffered mode.
     setbuf( stdin, NULL );
     setbuf( stdout, NULL );
 
 
-    //pthread_sigmask( SIG_BLOCK, &termSig, NULL );
     setup_terminal();
-    rc = pthread_create( &keyThreadId, NULL, KeyThread, serial);
-    if ( rc != 0 )
+    r = pthread_create( &keyThreadId, NULL, KeyThread, serial);
+    if ( r != 0 )
     {
-        fprintf( stdout, "Error creating KeyThread: %s\n", strerror( rc ));
+        fprintf( stdout, "Error creating KeyThread: %s\n", strerror( r ));
         exit( 7 );
     }
-    rc = pthread_create( &readThreadId, NULL, ReadThread, serial);
-    if ( rc != 0 )
+    r = pthread_create( &readThreadId, NULL, ReadThread, serial);
+    if ( r != 0 )
     {
-        fprintf( stdout, "Error creating ReadThread: %s\n", strerror( rc ));
+        fprintf( stdout, "Error creating ReadThread: %s\n", strerror( r ));
         exit( 8 );
     }
 
-    rc = pthread_create( &writeThreadId, NULL, WriteThread, serial);
-    if ( rc != 0 )
+    r = pthread_create( &writeThreadId, NULL, WriteThread, serial);
+    if ( r != 0 )
     {
-        fprintf( stdout, "Error creating WriteThread: %s\n", strerror( rc ));
+        fprintf( stdout, "Error creating WriteThread: %s\n", strerror( r ));
         exit( 9 );
     }
 
-    //Wait for a termmination signal
 
     sigemptyset( &termSig );
     sigaddset( &termSig, SIGINT );
     sigaddset( &termSig, SIGTERM );
     pthread_sigmask( SIG_BLOCK, &termSig, NULL );
 
-    if (( rc = sigwait( &termSig, &sig )) != 0 )
+    if (( r = sigwait( &termSig, &sig )) != 0 )
     {
         fprintf( stdout, "sigwait failed\n" );
     }
@@ -100,8 +90,6 @@ int serial_run(Serial *serial)
     pthread_cancel( keyThreadId);
 
 
-    // Unblock the termination signals so the user can kill us if we hang up
-    // waiting for the reader threads to exit.
 
     pthread_sigmask( SIG_UNBLOCK, &termSig, NULL );
 
@@ -139,22 +127,17 @@ struct{
     { B38400, 38400 },
     { B57600, 57600 },
     { B115200, 115200 },
-    { B230400, 230400 }
+    { B230400, 230400 },
 };
 
-#define ARRAY_LEN(x) ( sizeof( x ) / sizeof( x[ 0 ]))
+#define ARRAY_SZ(x) ( sizeof( x ) / sizeof( x[ 0 ]))
 /***************************************************************************/
 int serial_open(Serial *serial)
 {
-    int sig;
     speed_t baudRate;
     sigset_t termSig;
 
     struct termios attr;
-
-    // Parse the command line options
-
-    //parse_opt(serial, argc, argv);
 
 
     baudRate = B0;
@@ -164,14 +147,14 @@ int serial_open(Serial *serial)
     }
     else
     {
-        int baudId;
+        int i;
         int reqBaudRate = atoi( serial->baudStr );
 
-        for ( baudId = 0; baudId < ARRAY_LEN( gBaudTable ); baudId++ )
+        for ( i = 0; i < ARRAY_SZ( gBaudTable ); i++ )
         {
-            if ( gBaudTable[ baudId ].baudRate == reqBaudRate )
+            if ( gBaudTable[ i ].baudRate == reqBaudRate )
             {
-                baudRate = gBaudTable[ baudId ].speed;
+                baudRate = gBaudTable[ i ].speed;
                 break;
             }
         }
@@ -214,15 +197,13 @@ int serial_open(Serial *serial)
         exit( 4 );
     }
 
-    /*now open err_log_file to log error*/
-    return 0; // Get rid of warning about not returning anything
+    return 0;
 }
 
 /***************************************************************************/
 void *ReadThread( void *param )
 {
     Serial *serial =  param;
-    //static unsigned char recv_buf[1024];
     int bytesRead = 0;
     OUT_HEAD(serial);
     while(1){
@@ -240,7 +221,7 @@ void *WriteThread( void *param )
 {
     Serial *serial = param;
     int cnt = 0,packet_size;
-    sleep(2);//wait for friend port ready
+    usleep(1500000);//wait for friend port ready
     while ( 1 ) {
         if (!serial->sending)
             continue;

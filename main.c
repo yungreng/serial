@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * This implements a sample program for accessing the serial port.
+ * A debug program for serial port on windows & Linux.
  *
  *****************************************************************************/
 
@@ -34,7 +34,7 @@ int log_error(FILE *logfile,int id,unsigned char * buf, int bufLen)
     fprintf(logfile, "err#%d @",id);
     stamp(logfile);
     fprintf(logfile, ":\t\t");
-    /* out buffer */
+    /* show bytes in  buffer  */
     for (i=0; i < bufLen; i++){
         fputc(buf[i],logfile);
     }
@@ -87,7 +87,6 @@ int serial_openLogFile(Serial *serial)
     int result = 0;
     char err_file_name[64];
     sprintf(err_file_name, "err_%s.log", serial->DevShortName);
-    //stderr = fopen(err_file_name, "w+");
     serial->logfile = fopen(err_file_name, "w+");
     if (serial->logfile == NULL){
         fprintf(stdout, "Err:open log file %s failed!", err_file_name);
