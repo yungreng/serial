@@ -42,13 +42,13 @@ int log_error(FILE *logfile,int id,unsigned char * buf, int bufLen)
     fflush(logfile);
     return 0;
 }
-Crc gVerifier = {
+Packer gPacker = {
     .crc_bytes = CRC_BYTES,
-    .calculateCRC = Crc_calculateCRC,
-    .checkCRC = Crc_checkCRC,
+    .calculateCRC = packer_calculateCRC,
+    .checkCRC = packer_checkCRC,
 };
 Serial gSerial  = {
-    .pVerifier = &gVerifier,
+    .pPacker = &gPacker,
     .sending = TRUE,
     .HasFrame = TRUE,
     .HasSenderName = TRUE,
@@ -179,7 +179,7 @@ int  serial_stuffPacket(Serial *serial,int id)
         pSend += strlen(pSend);
     }
     if (serial->HasId){ /* stuff id */
-        sprintf(pSend," %d\t",id);
+        sprintf(pSend," %08x\t",id);
     }
     pSend += strlen(pSend);
     if (strlen(serial->Pattern)>0){ /* stuff pattern string */
@@ -194,7 +194,7 @@ int  serial_stuffPacket(Serial *serial,int id)
     pSend++;
     if (serial->HasFrame == TRUE){ /* stuff CRC & packet tail */
         /* stuff CRC value of HEX text format */
-        crc_value= serial->pVerifier->calculateCRC(pHead,(int)(pSend - pHead));
+        crc_value= serial->pPacker->calculateCRC(pHead,(int)(pSend - pHead));
         sprintf(pSend,"%04x",crc_value);
         pSend += strlen(pSend);
         /* stuff packet tail */
@@ -210,7 +210,7 @@ int  serial_stuffPacket(Serial *serial,int id)
 /***************************************************************************/
 inline void OUT_HEAD(Serial *serial)
 {
-    fprintf(stdout,"%s<<<<<",serial->DevShortName);
+    fprintf(stdout,"%s <<< ",serial->DevShortName);
 }
 /***************************************************************************/
 int serial_readDataBlock(Serial *serial, int bytesRead)
@@ -258,7 +258,7 @@ int serial_readDataBlock(Serial *serial, int bytesRead)
                 start = FALSE;
                 flag_cnt = 0;
                 OUT_HEAD(serial);
-                if(!serial->pVerifier->checkCRC(serial->pVerifier, packet_buf, recv_cnt-FLAG_BYTES)){
+                if(!serial->pPacker->checkCRC(serial->pPacker, packet_buf, recv_cnt-FLAG_BYTES)){
                     log_error(serial->logfile,++err_cnt,packet_buf, recv_cnt-FLAG_BYTES);
                 }
                 /*this maybe start of 'head'*/

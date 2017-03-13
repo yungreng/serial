@@ -67,7 +67,7 @@ typedef struct{
     int crc_bytes;
     int (*calculateCRC)();
     BOOL (*checkCRC)();
-}Crc;
+}Packer;
 /***************************************************************************/
 typedef struct{
     int sending;
@@ -90,7 +90,7 @@ typedef struct{
     unsigned char recv_buf[RECV_BUFSZ];
     HANDLE_TYPE hSerial;
     FILE *logfile;
-    Crc *pVerifier;
+    Packer *pPacker;
 }Serial;
 /***************************************************************************/
 inline void OUT_HEAD(Serial *serial);
@@ -101,8 +101,8 @@ int serial_open(Serial*);
 int serial_readDataBlock(Serial *serial, int bytesRead);
 int serial_stuffPacket(Serial *serial,int id);
 
-int Crc_calculateCRC(unsigned char *pData, int dataLen);
-BOOL Crc_checkCRC(Crc *crc, unsigned char *pData, int dataLen);
+int packer_calculateCRC(unsigned char *pData, int dataLen);
+BOOL packer_checkCRC(Packer *pPacker, unsigned char *pData, int dataLen);
 
 #ifdef APPLET /* run in multi-call utility */
 #define MAIN serial_main
