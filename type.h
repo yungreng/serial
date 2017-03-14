@@ -34,10 +34,9 @@
 #define RECV_BUFSZ    4096
 #define READ_BUFSZ    4096
 #define WANTED  64
-#define CRC_BYTES 4
 #define FLAG_BYTES 4
 #define HEAD_FLAG '\x55'
-#define TAIL_FLAG '\x5a'
+#define TAIL_FLAG '\xaa'
 
 #ifdef LINUX
 void* ReadThread( void* param );
