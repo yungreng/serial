@@ -205,7 +205,7 @@ void *ReadThread( void *param )
 {
     Serial *serial =  param;
     int bytesRead = 0;
-    OUT_HEAD(serial);
+    OUT_HEAD(serial->DevShortName);
     while(1){
         if (( bytesRead = read( serial->hSerial, serial->recv_buf, WANTED)) < 0 ){
             fprintf( stdout, "Serial read failed: %s\n", strerror( errno ));
@@ -221,11 +221,12 @@ void *WriteThread( void *param )
 {
     Serial *serial = param;
     int cnt = 0,packet_size;
+    Packer *packer = serial->packer;
     usleep(1500000);//wait for friend port ready
     while ( 1 ) {
         if (!serial->sending)
             continue;
-        packet_size = serial->stuffPacket(serial,++cnt);
+        packet_size = packer->stuffPacket(packer, serial->send_buf, serial->DevShortName, ++cnt);
         /* send packet and flush out.... */
         if (write( serial->hSerial, serial->send_buf, packet_size ) < 0 ){
             fprintf( stderr, "write to serial port failed: %s\n", strerror( errno ));

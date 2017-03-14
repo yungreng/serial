@@ -34,10 +34,10 @@
 #define RECV_BUFSZ    4096
 #define READ_BUFSZ    4096
 #define WANTED  64
+#define CRC_BYTES 4
+#define FLAG_BYTES 4
 #define HEAD_FLAG '\x55'
 #define TAIL_FLAG '\x5a'
-#define FLAG_BYTES 4
-#define CRC_BYTES 4
 
 #ifdef LINUX
 void* ReadThread( void* param );
@@ -64,18 +64,19 @@ DWORD WINAPI KeyThread(void* param);
 
 /***************************************************************************/
 typedef struct{
+    int HasFrame;
+    int HasDevName;
+    int HasNewline;
+    int HasId;
+    char *Pattern;
     int crc_bytes;
     int (*calculateCRC)();
     BOOL (*checkCRC)();
+    int (*stuffPacket)();
 }Packer;
 /***************************************************************************/
 typedef struct{
     int sending;
-    int HasFrame;
-    int HasSenderName;
-    int HasNewline;
-    int HasId;
-    char *Pattern;
     char *baudStr;
     char *portName;
     char DevFullName[40];
@@ -85,15 +86,14 @@ typedef struct{
     void (*parseOption)();
     int (*readDataBlock)();
     int (*openLogFile)();
-    int (*stuffPacket)();
     unsigned char send_buf[SEND_BUFSZ];
     unsigned char recv_buf[RECV_BUFSZ];
     HANDLE_TYPE hSerial;
     FILE *logfile;
-    Packer *pPacker;
+    Packer *packer;
 }Serial;
 /***************************************************************************/
-inline void OUT_HEAD(Serial *serial);
+inline void OUT_HEAD(unsigned char *DevName);
 void serial_parseOption(Serial *serial, int argc, char **argv);
 int serial_openLogFile(Serial *serial);
 int serial_run(Serial*);
@@ -103,6 +103,7 @@ int serial_stuffPacket(Serial *serial,int id);
 
 int packer_calculateCRC(unsigned char *pData, int dataLen);
 BOOL packer_checkCRC(Packer *pPacker, unsigned char *pData, int dataLen);
+int  packer_stuffPacket(Packer *packer,unsigned char *send_buf, unsigned char *DevShortName,  int id);
 
 #ifdef APPLET /* run in multi-call utility */
 #define MAIN serial_main

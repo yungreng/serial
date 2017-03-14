@@ -75,7 +75,7 @@ DWORD WINAPI ReadThread( void *param )
 {
     Serial *serial =  param;
     DWORD bytesRead = 0;
-    OUT_HEAD(serial);
+    OUT_HEAD(serial->DevShortName);
     while(1){
         OVERLAPPED osRead = {0};
         osRead.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
@@ -101,12 +101,13 @@ DWORD WINAPI WriteThread( void *param )
     Serial *serial = param;
     int cnt = 0;
     int packet_size;
+    Packer *packer = serial->packer;
     Sleep(1500);
     while ( 1 ) {
         if (!serial->sending)
             continue;
         /* sending  packet.... */
-        packet_size = serial->stuffPacket(serial,++cnt);
+        packet_size = packer->stuffPacket(packer, serial->send_buf, serial->DevShortName, ++cnt);
         DWORD byteWriten;
         OVERLAPPED osWrite = {0};
         osWrite.hEvent= CreateEvent( NULL, TRUE, FALSE, NULL);

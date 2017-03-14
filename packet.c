@@ -75,12 +75,57 @@ BOOL packer_checkCRC(Packer *pPacker, unsigned char *pData, int dataLen)
         pChar++;
     }
     /* checksum */
-    sscanf(pCrc, "%x", &crc_read);
+    sscanf(pCrc, "%4x", &crc_read);
     crc_calc = pPacker->calculateCRC(pData,payloadLen);
     if (crc_read !=  crc_calc ){
         result = FALSE;
     }
     return result;
 }
+/***************************************************************************/
+int  packer_stuffPacket(Packer *packer,unsigned char *send_buf, unsigned char *DevShortName,  int id)
+{
+    int i;
+    unsigned short crc_value;
+    unsigned char *pSend = send_buf;
+    unsigned char *pHead = &send_buf[FLAG_BYTES];
+    if (packer->HasFrame == TRUE){
+        for (i=0;i<FLAG_BYTES;i++){ /* stuff packet head */
+            *pSend  = HEAD_FLAG;
+            pSend ++;
+        }
+    }
+    if (packer->HasDevName){ /* stuff sender name */
+        sprintf(pSend,"%s____",DevShortName);
+        pSend += strlen(pSend);
+    }
+    if (packer->HasId){ /* stuff id */
+        sprintf(pSend,"Tx%d\t",id);
+        pSend += strlen(pSend);
+    }
+    if (strlen(packer->Pattern)>0){ /* stuff pattern string */
+        sprintf(pSend,"%s",packer->Pattern);
+        pSend += strlen(pSend);
+    }
+    if (packer->HasNewline){ /* stuff char of new_line */
+        sprintf(pSend,"%s","\n");
+        pSend += strlen(pSend);
+    }
+    *pSend = '\0';/* add end_flag */
+    pSend++;
+    if (packer->HasFrame == TRUE){ /* stuff CRC & packet tail */
+        /* stuff CRC value of HEX text format */
+        crc_value= packer->calculateCRC(pHead,(int)(pSend - pHead));
+        sprintf(pSend,"%04x",crc_value);
+        pSend += strlen(pSend);
+        /* stuff packet tail */
+        for (i=0;i<FLAG_BYTES;i++){
+            *pSend = TAIL_FLAG;
+            pSend++;
+        }
+    }
+    return (int)(pSend - send_buf);
+}
+
 
 

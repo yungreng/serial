@@ -43,41 +43,41 @@ int log_error(FILE *logfile,int id,unsigned char * buf, int bufLen)
     return 0;
 }
 Packer gPacker = {
-    .crc_bytes = CRC_BYTES,
-    .calculateCRC = packer_calculateCRC,
-    .checkCRC = packer_checkCRC,
-};
-Serial gSerial  = {
-    .pPacker = &gPacker,
-    .sending = TRUE,
     .HasFrame = TRUE,
-    .HasSenderName = TRUE,
+    .HasDevName = TRUE,
     .HasNewline = TRUE,
     .HasId = TRUE,
     .Pattern = "0123456789abcdef",
+    .crc_bytes = CRC_BYTES,
+    .calculateCRC = packer_calculateCRC,
+    .checkCRC = packer_checkCRC,
+    .stuffPacket = packer_stuffPacket,
+};
+Serial gSerial  = {
+    .packer = &gPacker,
+    .sending = TRUE,
     .baudStr = "9600",
     .portName = DEFAULT_PORT,
     .open = serial_open,
     .openLogFile = serial_openLogFile,
     .run = serial_run,
     .parseOption = serial_parseOption,
-    .stuffPacket = serial_stuffPacket,
     .readDataBlock = serial_readDataBlock,
 };
 /***************************************************************************/
 int  serial_usage(char *bin_name)
 {
-    fprintf( stdout, "Usage: %s[option(s)]\n",bin_name );
-    fprintf( stdout, "\n" );
-    fprintf( stdout, "\t -b baudrate, Set baudrate(9600,115200 etc.) \n" );
-    fprintf( stdout, "\t -p %s, Set port name of  %s\n", DEFAULT_PORTX, DEFAULT_PORTX  );
-    fprintf( stdout, "\t -P string, Set pattern string \n" );
-    fprintf( stdout, "\t -t, no sending at start\n" );
-    fprintf( stdout, "\t -n, no new_line\n" );
-    fprintf( stdout, "\t -i, no id number\n" );
-    fprintf( stdout, "\t -s, no sender name\n" );
-    fprintf( stdout, "\t -c, no CRC&packet \n" );
-    fprintf( stdout, "\t -?h, this usage\n");
+    printf( "Usage: %s [option]\n",bin_name );
+    printf( "\n" );
+    printf( "\t -b baudrate, Set baudrate(9600,115200 etc.) \n" );
+    printf( "\t -p %s, Set port name of  %s\n", DEFAULT_PORTX, DEFAULT_PORTX  );
+    printf( "\t -P string, Set pattern string \n" );
+    printf( "\t -t, no sending at start\n" );
+    printf( "\t -n, no new_line\n" );
+    printf( "\t -i, no id number\n" );
+    printf( "\t -d, no device name\n" );
+    printf( "\t -c, no CRC&packet \n" );
+    printf( "\t -?h, this usage\n");
     return 0;
 }
 
@@ -86,11 +86,11 @@ int serial_openLogFile(Serial *serial)
 {
     int result = 0;
     char err_file_name[64];
-    sprintf(err_file_name, "err_%s.log", serial->DevShortName);
+    sprintf(err_file_name, "_%s.log", serial->DevShortName);
     serial->logfile = fopen(err_file_name, "w+");
     if (serial->logfile == NULL){
         fprintf(stdout, "Err:open log file %s failed!", err_file_name);
-        exit(2);
+        exit(1);
     }
     result = 1;
     return result;
@@ -99,7 +99,8 @@ int serial_openLogFile(Serial *serial)
 void serial_parseOption(Serial *serial, int argc, char **argv)
 {
     int opt;
-    while (( opt = getopt( argc, argv, "b:p:P:csnith?")) > 0 ){
+    Packer *packer = serial->packer;
+    while (( opt = getopt( argc, argv, "b:p:P:cdnith?")) > 0 ){
         switch ( opt ){
             case 't':
                 {
@@ -118,27 +119,27 @@ void serial_parseOption(Serial *serial, int argc, char **argv)
                 }
             case 'P':
                 {
-                    serial->Pattern = optarg;
+                    packer->Pattern = optarg;
                     break;
                 }
             case 'n':
                 {
-                    serial->HasNewline = FALSE;
+                    packer->HasNewline = FALSE;
                     break;
                 }
-            case 's':
+            case 'd':
                 {
-                    serial->HasSenderName = FALSE;
+                    packer->HasDevName = FALSE;
                     break;
                 }
             case 'i':
                 {
-                    serial->HasId = FALSE;
+                    packer->HasId = FALSE;
                     break;
                 }
             case 'c':
                 {
-                    serial->HasFrame = FALSE;
+                    packer->HasFrame = FALSE;
                     break;
                 }
             case '?':
@@ -161,70 +162,27 @@ void serial_parseOption(Serial *serial, int argc, char **argv)
 
 }
 
-/***************************************************************************/
-int  serial_stuffPacket(Serial *serial,int id)
-{
-    int i;
-    unsigned short crc_value;
-    unsigned char *pSend = serial->send_buf;
-    unsigned char *pHead = &serial->send_buf[FLAG_BYTES];
-    if (serial->HasFrame == TRUE){
-        for (i=0;i<FLAG_BYTES;i++){ /* stuff packet head */
-            *pSend  = HEAD_FLAG;
-            pSend ++;
-        }
-    }
-    if (serial->HasSenderName){ /* stuff sender name */
-        sprintf(pSend,"%s :",serial->DevShortName);
-        pSend += strlen(pSend);
-    }
-    if (serial->HasId){ /* stuff id */
-        sprintf(pSend," %08x\t",id);
-    }
-    pSend += strlen(pSend);
-    if (strlen(serial->Pattern)>0){ /* stuff pattern string */
-        sprintf(pSend,"%s",serial->Pattern);
-        pSend += strlen(pSend);
-    }
-    if (serial->HasNewline){ /* stuff char of new_line */
-        sprintf(pSend,"%s","\n");
-        pSend += strlen(pSend);
-    }
-    *pSend = '\0';/* add end_flag */
-    pSend++;
-    if (serial->HasFrame == TRUE){ /* stuff CRC & packet tail */
-        /* stuff CRC value of HEX text format */
-        crc_value= serial->pPacker->calculateCRC(pHead,(int)(pSend - pHead));
-        sprintf(pSend,"%04x",crc_value);
-        pSend += strlen(pSend);
-        /* stuff packet tail */
-        for (i=0;i<FLAG_BYTES;i++){
-            *pSend = TAIL_FLAG;
-            pSend++;
-        }
-    }
-    return (int)(pSend - serial->send_buf);
-}
-
 
 /***************************************************************************/
-inline void OUT_HEAD(Serial *serial)
+inline void OUT_HEAD(unsigned char *DevName)
 {
-    fprintf(stdout,"%s <<< ",serial->DevShortName);
+    fprintf(stdout,"%s <<< ",DevName);
 }
 /***************************************************************************/
 int serial_readDataBlock(Serial *serial, int bytesRead)
 {
     int i;
+    static packet_cnt=0;
     static unsigned char packet_buf[READ_BUFSZ];
     static unsigned char last_char;
     static flag_cnt = 0;
     static BOOL start = FALSE;
     static int recv_cnt = 0;
     static int err_cnt = 0;
+    Packer *packer  = serial->packer;
     char *pRead = serial->recv_buf; /* receive buffer head */
     for (i=0;i<bytesRead;i++){
-        if (serial->HasFrame == FALSE){ /* no packet & CRC */
+        if (packer->HasFrame == FALSE){ /* no packet & CRC */
             fputc(*pRead,stdout);
             pRead++;
             continue;
@@ -257,8 +215,9 @@ int serial_readDataBlock(Serial *serial, int bytesRead)
             if  (flag_cnt == FLAG_BYTES - 1) { /* end of FLAG_BYTES  'tail' */
                 start = FALSE;
                 flag_cnt = 0;
-                OUT_HEAD(serial);
-                if(!serial->pPacker->checkCRC(serial->pPacker, packet_buf, recv_cnt-FLAG_BYTES)){
+                fprintf(stdout,"Rx%d____",++packet_cnt);
+                OUT_HEAD(serial->DevShortName);
+                if(!packer->checkCRC(packer, packet_buf, recv_cnt-FLAG_BYTES)){
                     log_error(serial->logfile,++err_cnt,packet_buf, recv_cnt-FLAG_BYTES);
                 }
                 /*this maybe start of 'head'*/
