@@ -79,7 +79,7 @@ DWORD WINAPI ReadThread( void *param )
     while(1){
         OVERLAPPED osRead = {0};
         osRead.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-        if ( !ReadFile(serial->hSerial, serial->recv_buf, WANTED, &bytesRead, &osRead) ){
+        if ( !ReadFile(serial->hSerial, serial->recv_buf, READ_SZ, &bytesRead, &osRead) ){
             //loop until success
             while(1){
                 Sleep(0);
@@ -99,7 +99,7 @@ DWORD WINAPI ReadThread( void *param )
 DWORD WINAPI WriteThread( void *param )
 {
     Serial *serial = param;
-    int cnt = 0;
+    int id = 0;
     int packet_size;
     Packer *packer = serial->packer;
     Sleep(1500);
@@ -107,13 +107,12 @@ DWORD WINAPI WriteThread( void *param )
         if (!serial->sending)
             continue;
         /* sending  packet.... */
-        packet_size = packer->stuffPacket(packer, serial->send_buf, serial->DevShortName, ++cnt);
+        packet_size = packer->stuffPacket(packer, serial->send_buf, serial->DevShortName, ++id);
         DWORD byteWriten;
         OVERLAPPED osWrite = {0};
         osWrite.hEvent= CreateEvent( NULL, TRUE, FALSE, NULL);
         if (!WriteFile( serial->hSerial, serial->send_buf, packet_size,&byteWriten, &osWrite)){
-            //waiting for success writing
-            while(1){
+            while(1){ //waiting for success writing
                 Sleep(0);
                 if (WaitForSingleObject(osWrite.hEvent, INFINITE) == WAIT_OBJECT_0) {
                     if (GetOverlappedResult(serial->hSerial, &osWrite, &byteWriten, FALSE)){

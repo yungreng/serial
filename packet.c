@@ -88,10 +88,10 @@ int  packer_stuffPacket(Packer *packer,unsigned char *send_buf, unsigned char *D
     int i;
     unsigned short crc_value;
     unsigned char *pSend = send_buf;
-    unsigned char *pHead = &send_buf[FLAG_BYTES];
+    unsigned char *pHead = &send_buf[packer->flag_bytes];
     if (packer->HasFrame == TRUE){
-        for (i=0;i<FLAG_BYTES;i++){ /* stuff packet head */
-            *pSend  = HEAD_FLAG;
+        for (i=0;i<packer->flag_bytes;i++){ /* stuff packet head */
+            *pSend  = packer->head_flag;
             pSend ++;
         }
     }
@@ -111,16 +111,15 @@ int  packer_stuffPacket(Packer *packer,unsigned char *send_buf, unsigned char *D
         sprintf(pSend,"%s","\n");
         pSend += strlen(pSend);
     }
-    *pSend = '\0';/* add end_flag */
-    pSend++;
     if (packer->HasFrame == TRUE){ /* stuff CRC & packet tail */
         /* stuff CRC value of HEX text format */
         crc_value= packer->calculateCRC(pHead,(int)(pSend - pHead));
         sprintf(pSend,"%04x",crc_value);
         pSend += strlen(pSend);
+        pSend++;
         /* stuff packet tail */
-        for (i=0;i<FLAG_BYTES;i++){
-            *pSend = TAIL_FLAG;
+        for (i=0;i<packer->flag_bytes;i++){
+            *pSend = packer->tail_flag;
             pSend++;
         }
     }

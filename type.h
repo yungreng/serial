@@ -24,7 +24,7 @@
 #endif /*LINUX*/
 
 
-#define CRC_BYTES 4
+#define CRC_BYTES 5
 #define BOOL unsigned char
 #define TRUE  1
 #define FALSE  0
@@ -33,7 +33,7 @@
 #define SEND_BUFSZ    4096
 #define RECV_BUFSZ    4096
 #define READ_BUFSZ    4096
-#define WANTED  64
+#define READ_SZ    READ_BUFSZ/4
 #define FLAG_BYTES 4
 #define HEAD_FLAG '\x55'
 #define TAIL_FLAG '\xaa'
@@ -69,6 +69,9 @@ typedef struct{
     int HasId;
     char *Pattern;
     int crc_bytes;
+    int flag_bytes;
+    char head_flag;
+    char tail_flag;
     int (*calculateCRC)();
     BOOL (*checkCRC)();
     int (*stuffPacket)();

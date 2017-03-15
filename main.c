@@ -49,6 +49,9 @@ Packer gPacker = {
     .HasId = TRUE,
     .Pattern = "0123456789abcdef",
     .crc_bytes = CRC_BYTES,
+    .flag_bytes = FLAG_BYTES,
+    .head_flag = HEAD_FLAG,
+    .tail_flag = TAIL_FLAG,
     .calculateCRC = packer_calculateCRC,
     .checkCRC = packer_checkCRC,
     .stuffPacket = packer_stuffPacket,
@@ -189,7 +192,7 @@ int serial_readDataBlock(Serial *serial, int bytesRead)
         }
         /* check out packet head*/
         if ( start == FALSE ){
-            if ( *pRead == HEAD_FLAG ){
+            if ( *pRead == packer->head_flag){
                 flag_cnt ++;
             }else{
                 if (--flag_cnt <= 0)
@@ -206,7 +209,7 @@ int serial_readDataBlock(Serial *serial, int bytesRead)
             continue;
         }
 
-        if ( *pRead == TAIL_FLAG){ /* check out packet tail */
+        if ( *pRead == packer->tail_flag){ /* check out packet tail */
             flag_cnt++;
         }else{
             if (--flag_cnt < 0){
@@ -221,7 +224,7 @@ int serial_readDataBlock(Serial *serial, int bytesRead)
                     log_error(serial->logfile,++err_cnt,packet_buf, recv_cnt-FLAG_BYTES);
                 }
                 /*this maybe start of 'head'*/
-                if ( *pRead == HEAD_FLAG )
+                if ( *pRead == packer->head_flag)
                     flag_cnt ++;
                 recv_cnt = 0;
                 last_char = *pRead;
