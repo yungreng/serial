@@ -255,7 +255,13 @@ void * KeyThread(void * param)
             if (t.type != EV_KEY  && t.value != 1)
                 continue;
             switch (t.code){
-                case KEY_R:
+                case KEY_ESC:
+                    {
+                        restore_terminal();
+                        exit(0);
+                        break;
+                    }
+                 case KEY_R:
                     {
                         serial->sending= 1;
                         break;
@@ -265,13 +271,7 @@ void * KeyThread(void * param)
                         serial->sending= 0;
                         break;
                     }
-                case KEY_ESC:
-                    {
-                        restore_terminal();
-                        exit(8);
-                        break;
-                    }
-            }
+           }
         }
     }
     close(keys_fd);

@@ -134,8 +134,11 @@ DWORD WINAPI  KeyThread(void* param)
     Serial * serial = param;
     while (1){
         switch (getch()){
-            case 'r':
-            case 'R':
+            case '\x1b':
+                exit(0);
+                break;
+            case 't':
+            case 'T':
                 serial->sending = 1;
                 break;
             case 'q':
