@@ -55,6 +55,7 @@ Packer gPacker = {
     .calculateCRC = packer_calculateCRC,
     .checkCRC = packer_checkCRC,
     .stuffPacket = packer_stuffPacket,
+    .parsePacket = packer_parsePacket,
 };
 Serial gSerial  = {
     .packer = &gPacker,
@@ -65,7 +66,6 @@ Serial gSerial  = {
     .openLogFile = serial_openLogFile,
     .run = serial_run,
     .parseOption = serial_parseOption,
-    .readDataBlock = serial_readDataBlock,
 };
 /***************************************************************************/
 int  serial_usage(char *bin_name)
@@ -89,9 +89,9 @@ int serial_openLogFile(Serial *serial)
 {
     int result = 0;
     char err_file_name[64];
-    sprintf(err_file_name, "_%s.log", serial->DevShortName);
-    serial->logfile = fopen(err_file_name, "w+");
-    if (serial->logfile == NULL){
+    sprintf(err_file_name, "_%s.log", serial->packer->DevShortName);
+    serial->packer->logfile = fopen(err_file_name, "w+");
+    if (serial->packer->logfile == NULL){
         fprintf(stdout, "Err:open log file %s failed!", err_file_name);
         exit(1);
     }
@@ -161,85 +161,80 @@ void serial_parseOption(Serial *serial, int argc, char **argv)
     {
         sprintf(serial->DevFullName, DEV_FORMAT_STR, serial->portName);
     }
-    serial->DevShortName = strrchr(serial->DevFullName,DIR_SYM) + 1;
+    packer->DevShortName = strrchr(serial->DevFullName,DIR_SYM) + 1;
 
 }
 
 
 /***************************************************************************/
-inline void OUT_HEAD(unsigned char *DevName)
-{
-    fprintf(stdout,"%s <<< ",DevName);
-}
-/***************************************************************************/
-int serial_readDataBlock(Serial *serial, int bytesRead)
-{
-    int i;
-    static packet_cnt=0;
-    static unsigned char packet_buf[READ_BUFSZ];
-    static unsigned char last_char;
-    static flag_cnt = 0;
-    static BOOL start = FALSE;
-    static int recv_cnt = 0;
-    static int err_cnt = 0;
-    Packer *packer  = serial->packer;
-    char *pRead = serial->recv_buf; /* receive buffer head */
-    for (i=0;i<bytesRead;i++){
-        if (packer->HasFrame == FALSE){ /* no packet & CRC */
-            fputc(*pRead,stdout);
-            pRead++;
-            continue;
-        }
-        /* check out packet head*/
-        if ( start == FALSE ){
-            if ( *pRead == packer->head_flag){
-                flag_cnt ++;
-            }else{
-                if (--flag_cnt <= 0)
-                    flag_cnt = 0;
-                if (flag_cnt == FLAG_BYTES-1){/* end of FLAG_BYTES 'head' */
-                    flag_cnt = 0;
-                    start = TRUE;
-                    packet_buf[recv_cnt]= *pRead;
-                    recv_cnt++;
-                }
-            }
-            last_char = *pRead;
-            pRead++;
-            continue;
-        }
-
-        if ( *pRead == packer->tail_flag){ /* check out packet tail */
-            flag_cnt++;
-        }else{
-            if (--flag_cnt < 0){
-                flag_cnt = 0;
-            }
-            if  (flag_cnt == FLAG_BYTES - 1) { /* end of FLAG_BYTES  'tail' */
-                start = FALSE;
-                flag_cnt = 0;
-                fprintf(stdout,"Rx%d____",++packet_cnt);
-                OUT_HEAD(serial->DevShortName);
-                if(!packer->checkCRC(packer, packet_buf, recv_cnt-FLAG_BYTES)){
-                    log_error(serial->logfile,++err_cnt,packet_buf, recv_cnt-FLAG_BYTES);
-                }
-                /*this maybe start of 'head'*/
-                if ( *pRead == packer->head_flag)
-                    flag_cnt ++;
-                recv_cnt = 0;
-                last_char = *pRead;
-                pRead++;
-                continue;
-            }
-        }
-        /* get content of packet */
-        packet_buf[recv_cnt]= *pRead;
-        recv_cnt++;
-        last_char = *pRead;
-        pRead++;
-    }
-    return 0;
-}
+//int serial_readDataBlock(Serial *serial, int bytesRead)
+//{
+//    int i;
+//    static packet_cnt=0;
+//    static unsigned char packet_buf[READ_BUFSZ];
+//    static unsigned char last_char;
+//    static flag_cnt = 0;
+//    static BOOL start = FALSE;
+//    static int recv_cnt = 0;
+//    static int err_cnt = 0;
+//    Packer *packer  = serial->packer;
+//    char *pRead = serial->recv_buf; /* receive buffer head */
+//    for (i=0;i<bytesRead;i++){
+//        if (packer->HasFrame == FALSE){ /* no packet & CRC */
+//            fputc(*pRead,stdout);
+//            pRead++;
+//            continue;
+//        }
+//        /* check out packet head*/
+//        if ( start == FALSE ){
+//            if ( *pRead == packer->head_flag){
+//                flag_cnt ++;
+//            }else{
+//                if (--flag_cnt <= 0)
+//                    flag_cnt = 0;
+//                if (flag_cnt == FLAG_BYTES-1){/* end of FLAG_BYTES 'head' */
+//                    flag_cnt = 0;
+//                    start = TRUE;
+//                    packet_buf[recv_cnt]= *pRead;
+//                    recv_cnt++;
+//                }
+//            }
+//            last_char = *pRead;
+//            pRead++;
+//            continue;
+//        }
+//
+//        if ( *pRead == packer->tail_flag){ /* check out packet tail */
+//            flag_cnt++;
+//        }else{
+//            if (--flag_cnt < 0){
+//                flag_cnt = 0;
+//            }
+//            if  (flag_cnt == FLAG_BYTES - 1) { /* end of FLAG_BYTES  'tail' */
+//                start = FALSE;
+//                flag_cnt = 0;
+//                fprintf(stdout,"Rx%d____",++packet_cnt);
+//                OUT_HEAD(serial->DevShortName);
+//                if(!packer->checkCRC(packer, packet_buf, recv_cnt-FLAG_BYTES)){
+//                    log_error(serial->logfile,++err_cnt,packet_buf, recv_cnt-FLAG_BYTES);
+//                }
+//                /*this maybe start of 'head'*/
+//                if ( *pRead == packer->head_flag)
+//                    flag_cnt ++;
+//                recv_cnt = 0;
+//                last_char = *pRead;
+//                pRead++;
+//                continue;
+//            }
+//        }
+//        /* get content of packet */
+//        packet_buf[recv_cnt]= *pRead;
+//        recv_cnt++;
+//        last_char = *pRead;
+//        pRead++;
+//    }
+//    return 0;
+//}
 
 /***************************************************************************/
 //int main( int argc, char **argv )

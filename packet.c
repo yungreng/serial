@@ -60,30 +60,32 @@ int packer_calculateCRC( unsigned char *pData, int dataLen)
     return (int)( CRCHi << 8 | CRCLo );
 }
 /***************************************************************************/
-BOOL packer_checkCRC(Packer *pPacker, unsigned char *pData, int dataLen)
+BOOL packer_checkCRC(Packer *packer, int dataLen)
 {
+    static int err_cnt = 0;
     BOOL result = TRUE;
     int crc_read;
     int crc_calc;
     int i;
-    int payloadLen = dataLen - pPacker->crc_bytes;
-    unsigned char *pCrc = pData + payloadLen;
+    int payloadLen = dataLen - packer->crc_bytes;
+    unsigned char *pCrc = packer->packet_buf + payloadLen;
     /* show content */
-    unsigned char *pChar = pData;
+    unsigned char *pChar = packer->packet_buf ;
     for (i=0;i<payloadLen;i++){
         fputc(*pChar, stdout);
         pChar++;
     }
     /* checksum */
     sscanf(pCrc, "%4x", &crc_read);
-    crc_calc = pPacker->calculateCRC(pData,payloadLen);
+    crc_calc = packer->calculateCRC(packer->packet_buf, payloadLen);
     if (crc_read !=  crc_calc ){
+        log_error(packer->logfile,++err_cnt,packer->packet_buf, dataLen - packer->flag_bytes);
         result = FALSE;
     }
     return result;
 }
 /***************************************************************************/
-int  packer_stuffPacket(Packer *packer,unsigned char *send_buf, unsigned char *DevShortName,  int id)
+int  packer_stuffPacket(Packer *packer,unsigned char *send_buf, int id)
 {
     int i;
     unsigned short crc_value;
@@ -96,7 +98,7 @@ int  packer_stuffPacket(Packer *packer,unsigned char *send_buf, unsigned char *D
         }
     }
     if (packer->HasDevName){ /* stuff sender name */
-        sprintf(pSend,"%s____",DevShortName);
+        sprintf(pSend,"%s____",packer->DevShortName);
         pSend += strlen(pSend);
     }
     if (packer->HasId){ /* stuff id */
@@ -124,6 +126,77 @@ int  packer_stuffPacket(Packer *packer,unsigned char *send_buf, unsigned char *D
         }
     }
     return (int)(pSend - send_buf);
+}
+
+/***************************************************************************/
+inline void out_head(unsigned char *DevName)
+{
+    fprintf(stdout,"%s <<< ",DevName);
+}
+/***************************************************************************/
+int packer_parsePacket(Packer *packer, unsigned char *recv_buf, int bytesRead)
+{
+    int i;
+    static packet_cnt=0;
+    static unsigned char last_char;
+    static flag_cnt = 0;
+    static BOOL start = FALSE;
+    static int recv_cnt = 0;
+    //Packer *packer  = serial->packer;
+    char *pRead = recv_buf; /* receive buffer head */
+    for (i=0;i<bytesRead;i++){
+        if (packer->HasFrame == FALSE){ /* no packet & CRC */
+            fputc(*pRead,stdout);
+            pRead++;
+            continue;
+        }
+        /* check out packet head*/
+        if ( start == FALSE ){
+            if ( *pRead == packer->head_flag){
+                flag_cnt ++;
+            }else{
+                if (--flag_cnt <= 0)
+                    flag_cnt = 0;
+                if (flag_cnt == packer->flag_bytes-1){/* end of FLAG_BYTES 'head' */
+                    flag_cnt = 0;
+                    start = TRUE;
+                    packer->packet_buf[recv_cnt]= *pRead;
+                    recv_cnt++;
+                }
+            }
+            last_char = *pRead;
+            pRead++;
+            continue;
+        }
+
+        if ( *pRead == packer->tail_flag){ /* check out packet tail */
+            flag_cnt++;
+        }else{
+            if (--flag_cnt < 0){
+                flag_cnt = 0;
+            }
+            if  (flag_cnt == packer->flag_bytes - 1) { /* end of FLAG_BYTES  'tail' */
+                start = FALSE;
+                flag_cnt = 0;
+                fprintf(stdout,"Rx%d____",++packet_cnt);
+                out_head(packer->DevShortName);
+                packer->checkCRC(packer, recv_cnt-packer->flag_bytes);
+                /*this maybe start of 'head'*/
+                if ( *pRead == packer->head_flag)
+                    flag_cnt ++;
+                recv_cnt = 0;
+                last_char = *pRead;
+                pRead++;
+                continue;
+            }
+        }
+        /* get content of packet */
+        packer->packet_buf[recv_cnt]= *pRead;
+        recv_cnt++;
+        last_char = *pRead;
+        pRead++;
+    }
+    return 0;
 }
 
 

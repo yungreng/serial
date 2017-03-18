@@ -72,9 +72,13 @@ typedef struct{
     int flag_bytes;
     char head_flag;
     char tail_flag;
+    FILE *logfile;
+    char *DevShortName;
+    unsigned char packet_buf[READ_BUFSZ];
     int (*calculateCRC)();
     BOOL (*checkCRC)();
     int (*stuffPacket)();
+    int (*parsePacket)();
 }Packer;
 /***************************************************************************/
 typedef struct{
@@ -82,7 +86,6 @@ typedef struct{
     char *baudStr;
     char *portName;
     char DevFullName[40];
-    char *DevShortName;
     int (*run)();
     int (*open)();
     void (*parseOption)();
@@ -91,21 +94,20 @@ typedef struct{
     unsigned char send_buf[SEND_BUFSZ];
     unsigned char recv_buf[RECV_BUFSZ];
     HANDLE_TYPE hSerial;
-    FILE *logfile;
     Packer *packer;
 }Serial;
 /***************************************************************************/
-inline void OUT_HEAD(unsigned char *DevName);
+inline void out_head(unsigned char *DevName);
 void serial_parseOption(Serial *serial, int argc, char **argv);
 int serial_openLogFile(Serial *serial);
 int serial_run(Serial*);
 int serial_open(Serial*);
-int serial_readDataBlock(Serial *serial, int bytesRead);
 int serial_stuffPacket(Serial *serial,int id);
 
 int packer_calculateCRC(unsigned char *pData, int dataLen);
-BOOL packer_checkCRC(Packer *pPacker, unsigned char *pData, int dataLen);
-int  packer_stuffPacket(Packer *packer,unsigned char *send_buf, unsigned char *DevShortName,  int id);
+BOOL packer_checkCRC(Packer *pPacker, int dataLen);
+int  packer_stuffPacket(Packer *packer,unsigned char *send_buf, int id);
+int packer_parsePacket(Packer *packer, unsigned char *recv_buf, int bytesRead);
 
 #ifdef APPLET /* run in multi-call utility */
 #define MAIN serial_main
