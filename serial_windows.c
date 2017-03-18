@@ -101,14 +101,14 @@ DWORD WINAPI WriteThread( void *param )
 {
     Serial *serial = param;
     Packer *packer = serial->packer;
-    int id = 0;
+    int packetId = 0;
     int packet_size;
     Sleep(1500);
     while ( 1 ) {
         if (!serial->sending)
             continue;
         /* sending  packet.... */
-        packet_size = packer->stuffPacket(packer, serial->send_buf, packer->DevShortName, ++id);
+        packet_size = packer->stuffPacket(packer, serial->send_buf, ++packetId );
         DWORD byteWriten;
         OVERLAPPED osWrite = {0};
         osWrite.hEvent= CreateEvent( NULL, TRUE, FALSE, NULL);

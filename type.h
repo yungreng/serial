@@ -102,7 +102,7 @@ void serial_parseOption(Serial *serial, int argc, char **argv);
 int serial_openLogFile(Serial *serial);
 int serial_run(Serial*);
 int serial_open(Serial*);
-int serial_stuffPacket(Serial *serial,int id);
+//int serial_stuffPacket(Serial *serial,int id);
 
 int packer_calculateCRC(unsigned char *pData, int dataLen);
 BOOL packer_checkCRC(Packer *pPacker, int dataLen);

@@ -222,12 +222,12 @@ void *WriteThread( void *param )
 {
     Serial *serial = param;
     Packer *packer = serial->packer;
-    int id = 0,packet_size;
+    int packetId = 0,packet_size;
     usleep(1500000);//wait for friend port ready
     while ( 1 ) {
         if (!serial->sending)
             continue;
-        packet_size = packer->stuffPacket(packer, serial->send_buf, ++id);
+        packet_size = packer->stuffPacket(packer, serial->send_buf, ++packetId );
         /* send packet and flush out.... */
         if (write( serial->hSerial, serial->send_buf, packet_size ) < 0 ){
             fprintf( stderr, "write to serial port failed: %s\n", strerror( errno ));
