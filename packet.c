@@ -85,6 +85,34 @@ BOOL packer_checkCRC(Packer *packer, int dataLen)
     return result;
 }
 /***************************************************************************/
+char Value[1024]={0};
+void packer_parsePattern(Packer *packer, char *optarg)
+{
+    int byte;
+    packer->PatternSZ = 0;
+    char*pRead;
+    char*pEnd = optarg + strlen(optarg);
+    char*pValue = Value;
+    if (*optarg == 'x' && *(optarg+1) == ':' ){
+        packer->Pattern = Value;
+        printf("parse hex values:%s\n",optarg);
+        pRead = optarg + 2;
+        while(pRead < pEnd){
+            sscanf(pRead,"%2x:",&byte);
+            *pValue = (char)byte;
+            pValue++;
+            packer->PatternSZ++;
+            pRead += 3;
+        }
+        printf("parse result:%s\n",Value);
+    }else{
+        packer->Pattern = optarg;
+        printf("parse string values\n");
+        packer->PatternSZ = strlen(optarg);
+
+    }
+}
+/***************************************************************************/
 int  packer_stuffPacket(Packer *packer,unsigned char *send_buf, int id)
 {
     int i;
@@ -105,13 +133,15 @@ int  packer_stuffPacket(Packer *packer,unsigned char *send_buf, int id)
         sprintf(pSend,"Tx%d\t",id);
         pSend += strlen(pSend);
     }
-    if (strlen(packer->Pattern)>0){ /* stuff pattern string */
-        sprintf(pSend,"%s",packer->Pattern);
-        pSend += strlen(pSend);
+    if (packer->PatternSZ>0){ /* stuff pattern string */
+        for (i=0;i<packer->PatternSZ;i++){
+            *pSend = *(packer->Pattern + i);
+            pSend++;
+        }
     }
     if (packer->HasNewline){ /* stuff char of new_line */
-        sprintf(pSend,"%s","\n");
-        pSend += strlen(pSend);
+        *pSend = '\n';
+        pSend++;
     }
     if (packer->HasFrame == TRUE){ /* stuff CRC & packet tail */
         /* stuff CRC value of HEX text format */

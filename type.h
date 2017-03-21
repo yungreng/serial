@@ -68,8 +68,10 @@ typedef struct{
     int HasNewline;
     int HasId;
     char *Pattern;
+    int PatternSZ;
     int crc_bytes;
     int flag_bytes;
+    int count;
     char head_flag;
     char tail_flag;
     FILE *logfile;
@@ -79,6 +81,7 @@ typedef struct{
     BOOL (*checkCRC)();
     int (*stuffPacket)();
     int (*parsePacket)();
+    void (*parsePattern)();
 }Packer;
 /***************************************************************************/
 typedef struct{
@@ -102,12 +105,13 @@ void serial_parseOption(Serial *serial, int argc, char **argv);
 int serial_openLogFile(Serial *serial);
 int serial_run(Serial*);
 int serial_open(Serial*);
-//int serial_stuffPacket(Serial *serial,int id);
+int serial_stuffPacket(Serial *serial,int id);
 
 int packer_calculateCRC(unsigned char *pData, int dataLen);
 BOOL packer_checkCRC(Packer *pPacker, int dataLen);
 int  packer_stuffPacket(Packer *packer,unsigned char *send_buf, int id);
 int packer_parsePacket(Packer *packer, unsigned char *recv_buf, int bytesRead);
+void packer_parsePattern(Packer *packer, char *optarg);
 
 #ifdef APPLET /* run in multi-call utility */
 #define MAIN serial_main

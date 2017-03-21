@@ -123,6 +123,9 @@ DWORD WINAPI WriteThread( void *param )
                 }
             }
         }
+        if (packetId == packer->count){
+            break;
+        }
         Sleep(1);
 
     }

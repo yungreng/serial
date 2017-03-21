@@ -48,14 +48,17 @@ Packer gPacker = {
     .HasNewline = TRUE,
     .HasId = TRUE,
     .Pattern = "0123456789abcdef",
+    .PatternSZ = sizeof("0123456789abcdef"),
     .crc_bytes = CRC_BYTES,
     .flag_bytes = FLAG_BYTES,
+    .count = 0,
     .head_flag = HEAD_FLAG,
     .tail_flag = TAIL_FLAG,
     .calculateCRC = packer_calculateCRC,
     .checkCRC = packer_checkCRC,
     .stuffPacket = packer_stuffPacket,
     .parsePacket = packer_parsePacket,
+    .parsePattern = packer_parsePattern,
 };
 Serial gSerial  = {
     .packer = &gPacker,
@@ -78,8 +81,9 @@ int  serial_usage(char *bin_name)
     printf( "\t -t, no sending at start\n" );
     printf( "\t -n, no new_line\n" );
     printf( "\t -i, no id number\n" );
+    printf( "\t -c count, send times before stop \n" );
     printf( "\t -d, no device name\n" );
-    printf( "\t -c, no CRC&packet \n" );
+    printf( "\t -v, no CRC&packet \n" );
     printf( "\t -?h, this usage\n");
     return 0;
 }
@@ -103,7 +107,7 @@ void serial_parseOption(Serial *serial, int argc, char **argv)
 {
     int opt;
     Packer *packer = serial->packer;
-    while (( opt = getopt( argc, argv, "b:p:P:cdnith?")) > 0 ){
+    while (( opt = getopt( argc, argv, "b:p:P:c:vdnith?")) > 0 ){
         switch ( opt ){
             case 't':
                 {
@@ -122,7 +126,13 @@ void serial_parseOption(Serial *serial, int argc, char **argv)
                 }
             case 'P':
                 {
-                    packer->Pattern = optarg;
+                    printf("parse pattern: %s\n\n",optarg);
+                    packer->parsePattern(packer, optarg);
+                    break;
+                }
+            case 'c':
+                {
+                    packer->count = atoi(optarg);
                     break;
                 }
             case 'n':
@@ -140,7 +150,7 @@ void serial_parseOption(Serial *serial, int argc, char **argv)
                     packer->HasId = FALSE;
                     break;
                 }
-            case 'c':
+            case 'v':
                 {
                     packer->HasFrame = FALSE;
                     break;

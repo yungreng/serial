@@ -234,6 +234,9 @@ void *WriteThread( void *param )
         }else{
             fsync(serial->hSerial);
         }
+        if (packetId == packer->count){
+            break;
+        }
         usleep(1000);/* pause for 1ms */
 
     }
