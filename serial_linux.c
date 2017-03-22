@@ -234,11 +234,12 @@ void *WriteThread( void *param )
         }else{
             fsync(serial->hSerial);
         }
-        if (packetId == packer->count){
+        if (packetId == packer->count ){
+            printf("stop sending....\n");
+            serial->sending= FALSE;
             break;
         }
         usleep(1000);/* pause for 1ms */
-
     }
     return NULL;
 }

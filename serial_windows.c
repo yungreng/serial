@@ -123,7 +123,9 @@ DWORD WINAPI WriteThread( void *param )
                 }
             }
         }
-        if (packetId == packer->count){
+        if (packetId == packer->count ){
+            printf("stop sending....\n");
+            serial->sending= FALSE;
             break;
         }
         Sleep(1);
