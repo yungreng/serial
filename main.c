@@ -59,6 +59,7 @@ Packer gPacker = {
     .stuffPacket = packer_stuffPacket,
     .parsePacket = packer_parsePacket,
     .parsePattern = packer_parsePattern,
+    .openPatternFile = packer_openPatternFile,
 };
 Serial gSerial  = {
     .packer = &gPacker,
@@ -76,8 +77,8 @@ int  serial_usage(char *bin_name)
     printf( "Usage: %s [option]\n",bin_name );
     printf( "\n" );
     printf( "\t -b baudrate, Set baudrate(9600,115200 etc.) \n" );
-    printf( "\t -p %s, Set port name of  %s\n", DEFAULT_PORTX, DEFAULT_PORTX  );
-    printf( "\t -P string, Set pattern string \n" );
+    printf( "\t -p %s, Set port name to  %s\n", DEFAULT_PORTX, DEFAULT_PORTX  );
+    printf( "\t -P string, Set pattern from file if string happened being a file, \n\t\tor as \"x:nn:nn:...\" to start with\"x:\" to input hex,\n\t\totherwise ascii text \n" );
     printf( "\t -t, no sending at start\n" );
     printf( "\t -n, no new_line\n" );
     printf( "\t -i, no id number\n" );
@@ -87,7 +88,6 @@ int  serial_usage(char *bin_name)
     printf( "\t -?h, this usage\n");
     return 0;
 }
-
 /***************************************************************************/
 int serial_openLogFile(Serial *serial)
 {
@@ -126,7 +126,7 @@ void serial_parseOption(Serial *serial, int argc, char **argv)
                 }
             case 'P':
                 {
-                    printf("parse pattern: %s\n\n",optarg);
+                    //printf("parse pattern: %s\n\n",optarg);
                     packer->parsePattern(packer, optarg);
                     break;
                 }

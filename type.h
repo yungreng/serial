@@ -30,8 +30,9 @@
 #define FALSE  0
 
 /***************************************************************************/
-#define SEND_BUFSZ    4096
-#define RECV_BUFSZ    4096
+#define VALUE_SZ 1024*4
+#define SEND_BUFSZ    VALUE_SZ*2
+#define RECV_BUFSZ    VALUE_SZ*2
 #define READ_BUFSZ    4096
 #define READ_SZ    READ_BUFSZ/4
 #define FLAG_BYTES 4
@@ -75,6 +76,8 @@ typedef struct{
     char head_flag;
     char tail_flag;
     FILE *logfile;
+    FILE *patternFile;
+    char *patternFileName;
     char *DevShortName;
     unsigned char packet_buf[READ_BUFSZ];
     int (*calculateCRC)();
@@ -82,6 +85,7 @@ typedef struct{
     int (*stuffPacket)();
     int (*parsePacket)();
     void (*parsePattern)();
+    int(*openPatternFile)();
 }Packer;
 /***************************************************************************/
 typedef struct{
@@ -112,6 +116,7 @@ BOOL packer_checkCRC(Packer *pPacker, int dataLen);
 int  packer_stuffPacket(Packer *packer,unsigned char *send_buf, int id);
 int packer_parsePacket(Packer *packer, unsigned char *recv_buf, int bytesRead);
 void packer_parsePattern(Packer *packer, char *optarg);
+int packer_openPatternFile(Packer * packer,char *filename);
 
 #ifdef APPLET /* run in multi-call utility */
 #define MAIN serial_main

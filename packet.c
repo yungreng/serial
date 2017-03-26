@@ -85,7 +85,19 @@ BOOL packer_checkCRC(Packer *packer, int dataLen)
     return result;
 }
 /***************************************************************************/
-char Value[1024]={0};
+int packer_openPatternFile(Packer * packer,char *filename)
+{
+    int result = 1;
+    packer->patternFile = fopen(filename, "r");
+    if (packer->patternFile == NULL){
+        //fprintf(stdout, "Warning: no such pattern file %s !\n", filename);
+        result = 0;
+    }
+    return result;
+}
+
+/***************************************************************************/
+char Value[VALUE_SZ]={0};
 void packer_parsePattern(Packer *packer, char *optarg)
 {
     int byte;
@@ -93,7 +105,18 @@ void packer_parsePattern(Packer *packer, char *optarg)
     char*pRead;
     char*pEnd = optarg + strlen(optarg);
     char*pValue = Value;
-    if (*optarg == 'x' && *(optarg+1) == ':' ){
+    int fileSZ = 0;
+    if (packer->openPatternFile(packer, optarg)){
+        printf("Note: using file \"%s\" as pattern\n",optarg);
+        fseek(packer->patternFile, 0, SEEK_END);
+        packer->PatternSZ = ftell(packer->patternFile);
+        packer->Pattern = malloc(packer->PatternSZ + 1);
+        if (packer->PatternSZ > VALUE_SZ){
+            packer->PatternSZ = VALUE_SZ;
+        }
+        fseek(packer->patternFile, 0, SEEK_SET);
+        fread(packer->Pattern, 1, packer->PatternSZ, packer->patternFile);
+    }else if (*optarg == 'x' && *(optarg+1) == ':' ){
         packer->Pattern = Value;
         printf("parse hex values:%s\n",optarg);
         pRead = optarg + 2;
