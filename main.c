@@ -59,7 +59,6 @@ Packer gPacker = {
     .stuffPacket = packer_stuffPacket,
     .parsePacket = packer_parsePacket,
     .parsePattern = packer_parsePattern,
-    .openPatternFile = packer_openPatternFile,
 };
 Serial gSerial  = {
     .packer = &gPacker,

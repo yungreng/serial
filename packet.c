@@ -84,29 +84,17 @@ BOOL packer_checkCRC(Packer *packer, int dataLen)
     }
     return result;
 }
-/***************************************************************************/
-int packer_openPatternFile(Packer * packer,char *filename)
-{
-    int result = 1;
-    packer->patternFile = fopen(filename, "r");
-    if (packer->patternFile == NULL){
-        //fprintf(stdout, "Warning: no such pattern file %s !\n", filename);
-        result = 0;
-    }
-    return result;
-}
 
 /***************************************************************************/
-char Value[VALUE_SZ]={0};
 void packer_parsePattern(Packer *packer, char *optarg)
 {
     int byte;
     packer->PatternSZ = 0;
     char*pRead;
     char*pEnd = optarg + strlen(optarg);
-    char*pValue = Value;
     int fileSZ = 0;
-    if (packer->openPatternFile(packer, optarg)){
+    char*pValue ;
+    if ( packer->patternFile = fopen(optarg, "r")){
         printf("Note: using file \"%s\" as pattern\n",optarg);
         fseek(packer->patternFile, 0, SEEK_END);
         packer->PatternSZ = ftell(packer->patternFile);
@@ -117,9 +105,10 @@ void packer_parsePattern(Packer *packer, char *optarg)
         fseek(packer->patternFile, 0, SEEK_SET);
         fread(packer->Pattern, 1, packer->PatternSZ, packer->patternFile);
     }else if (*optarg == 'x' && *(optarg+1) == ':' ){
-        packer->Pattern = Value;
         printf("parse hex values:%s\n",optarg);
+        packer->Pattern = malloc(strlen(optarg));
         pRead = optarg + 2;
+        pValue = packer->Pattern;
         while(pRead < pEnd){
             sscanf(pRead,"%2x:",&byte);
             *pValue = (char)byte;
@@ -127,12 +116,11 @@ void packer_parsePattern(Packer *packer, char *optarg)
             packer->PatternSZ++;
             pRead += 3;
         }
-        printf("parse result:%s\n",Value);
+        //printf("parse result:%s\n",Value);
     }else{
         packer->Pattern = optarg;
         printf("parse string values\n");
         packer->PatternSZ = strlen(optarg);
-
     }
 }
 /***************************************************************************/

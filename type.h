@@ -85,7 +85,6 @@ typedef struct{
     int (*stuffPacket)();
     int (*parsePacket)();
     void (*parsePattern)();
-    int(*openPatternFile)();
 }Packer;
 /***************************************************************************/
 typedef struct{
@@ -116,7 +115,6 @@ BOOL packer_checkCRC(Packer *pPacker, int dataLen);
 int  packer_stuffPacket(Packer *packer,unsigned char *send_buf, int id);
 int packer_parsePacket(Packer *packer, unsigned char *recv_buf, int bytesRead);
 void packer_parsePattern(Packer *packer, char *optarg);
-int packer_openPatternFile(Packer * packer,char *filename);
 
 #ifdef APPLET /* run in multi-call utility */
 #define MAIN serial_main
