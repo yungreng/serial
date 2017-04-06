@@ -92,9 +92,10 @@ int serial_openLogFile(Serial *serial)
 {
     int result = 0;
     char err_file_name[64];
-    sprintf(err_file_name, "_%s.log", serial->packer->DevShortName);
-    serial->packer->logfile = fopen(err_file_name, "w+");
-    if (serial->packer->logfile == NULL){
+    Packer* packer = serial->packer;
+    sprintf(err_file_name, "_%s.log", packer->DevShortName);
+    packer->logfile = fopen(err_file_name, "w+");
+    if (packer->logfile == NULL){
         fprintf(stdout, "Err:open log file %s failed!", err_file_name);
         exit(1);
     }

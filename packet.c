@@ -159,7 +159,7 @@ int  packer_stuffPacket(Packer *packer,unsigned char *send_buf, int id)
         crc_value= packer->calculateCRC(pHead,(int)(pSend - pHead));
         sprintf(pSend,"%04x",crc_value);
         pSend += strlen(pSend);
-        pSend++;
+        pSend++; /* add '\0' separate */
         /* stuff packet tail */
         for (i=0;i<packer->flag_bytes;i++){
             *pSend = packer->tail_flag;
