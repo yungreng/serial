@@ -203,19 +203,30 @@ int serial_open(Serial *serial)
 /***************************************************************************/
 void *ReadThread( void *param )
 {
-    Serial *serial =  param;
-    Packer *packer = serial->packer;
-    int bytesRead = 0;
-    out_head(packer->DevShortName);
-    while(1){
-        if (( bytesRead = read( serial->hSerial, serial->recv_buf, READ_SZ)) < 0 ){
-            fprintf( stdout, "Serial read failed: %s\n", strerror( errno ));
-            continue;
-        }
-        packer->parsePacket(packer, serial->recv_buf, bytesRead);
-    }
-    return NULL;
+	Serial *serial =  param;
+	Packer *packer = serial->packer;
+	int bytesRead = 0;
+	out_head(packer->DevShortName);
+	while(1){
+		if (( bytesRead = read( serial->hSerial, serial->recv_buf, READ_SZ)) < 0 ){
+			fprintf( stdout, "Serial read failed: %s\n", strerror( errno ));
+			continue;
+		}
+		packer->parsePacket(packer, serial->recv_buf, bytesRead);
+	}
+	return NULL;
 
+}
+void configRTS(HANDLE_TYPE hSerial,int status)
+{
+	int ctrlbits;
+	ioctl(hSerial,TIOCMGET,&ctrlbits);
+	if (status){
+		ctrlbits |= TIOCM_RTS;
+	}else{
+		ctrlbits &= ~TIOCM_RTS;
+	}
+	ioctl(hSerial, TIOCMSET,&ctrlbits);
 }
 /***************************************************************************/
 void *WriteThread( void *param )
@@ -223,6 +234,10 @@ void *WriteThread( void *param )
     Serial *serial = param;
     Packer *packer = serial->packer;
     int packetId = 0,packet_size;
+    if (!serial->sending)
+	configRTS(serial->hSerial,FALSE);
+    else
+	configRTS(serial->hSerial,TRUE);
     usleep(1500000);//wait for friend port ready
     while ( 1 ) {
         if (!serial->sending)
@@ -269,11 +284,13 @@ void * KeyThread(void * param)
                  case KEY_T:
                     {
                         serial->sending= 1;
+			configRTS(serial->hSerial,TRUE);
                         break;
                     }
                 case KEY_Q:
                     {
                         serial->sending= 0;
+			configRTS(serial->hSerial,FALSE);
                         break;
                     }
            }

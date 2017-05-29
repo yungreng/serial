@@ -103,6 +103,10 @@ DWORD WINAPI WriteThread( void *param )
     Packer *packer = serial->packer;
     int packetId = 0;
     int packet_size;
+    if (!serial->sending)
+	EscapeCommFunction(serial,CLRRTS);
+    else
+	EscapeCommFunction(serial,SETRTS);
     Sleep(1500);
     while ( 1 ) {
         if (!serial->sending)
@@ -145,11 +149,13 @@ DWORD WINAPI  KeyThread(void* param)
                 break;
             case 't':
             case 'T':
-                serial->sending = 1;
+                serial->sending = TRUE;
+		EscapeCommFunction(serial,SETRTS);
                 break;
             case 'q':
             case 'Q':
-                serial->sending = 0;
+                serial->sending = FALSE;
+		EscapeCommFunction(serial,CLRRTS);
                 break;
         }
     }
