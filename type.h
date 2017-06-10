@@ -97,6 +97,8 @@ typedef struct{
     void (*parseOption)();
     int (*readDataBlock)();
     int (*openLogFile)();
+    int (*setRTS)();
+    int (*clearRTS)();
     unsigned char send_buf[SEND_BUFSZ];
     unsigned char recv_buf[RECV_BUFSZ];
     HANDLE_TYPE hSerial;
@@ -109,6 +111,8 @@ int serial_openLogFile(Serial *serial);
 int serial_run(Serial*);
 int serial_open(Serial*);
 int serial_stuffPacket(Serial *serial,int id);
+int serial_setRTS(Serial *serial);
+int serial_clearRTS(Serial *serial);
 
 int packer_calculateCRC(unsigned char *pData, int dataLen);
 BOOL packer_checkCRC(Packer *pPacker, int dataLen);

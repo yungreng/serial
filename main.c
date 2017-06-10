@@ -69,11 +69,13 @@ Serial gSerial  = {
     .openLogFile = serial_openLogFile,
     .run = serial_run,
     .parseOption = serial_parseOption,
+    .setRTS = serial_setRTS,
+    .clearRTS = serial_clearRTS,
 };
 /***************************************************************************/
 int  serial_usage(char *bin_name)
 {
-    printf( "Usage: %s [option]\n",bin_name );
+    printf( "Usage:\t %s [option]\n",bin_name );
     printf( "\n" );
     printf( "\t -b baudrate, Set baudrate(9600,115200 etc.) \n" );
     printf( "\t -p %s, Set port name to  %s\n", DEFAULT_PORTX, DEFAULT_PORTX  );
